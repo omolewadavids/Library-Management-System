@@ -12,6 +12,7 @@ class BookModel(BaseModel):
     status: str = "Available"  # Default status is Available
     due_date: Optional[datetime] = None  # Optional, only for borrowed books
     reviews: List[str] = []
+    reserved_by: List[str] = []  # Users who have reserved this book
 
     # Adding a custom validator for book status
     @validator("status")
@@ -29,3 +30,7 @@ class BookModel(BaseModel):
 
     def add_review(self, review: str):
         self.reviews.append(review)
+
+    def reserve(self, user_id: str):
+        if user_id not in self.reserved_by:
+            self.reserved_by.append(user_id)

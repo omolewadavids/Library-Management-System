@@ -37,10 +37,16 @@ class Library:
                 book.status = "Checked-out"
                 due_date = datetime.now() + timedelta(days=14)  # Books are due in 14 days
                 self.borrowed_books[book_id] = {"user_id": user_id, "due_date": due_date}
+                self.users[user_id].borrowed_books_history.append(book_id)  # Add to user's borrowing history
                 print(f"User '{user_id}' has borrowed the book '{book.title}'")
                 print(f"Due date: {due_date.strftime('%Y-%m-%d %H:%M:%S')}")
             else:
-                print(f"Sorry, '{book.title}' is currently unavailable.")
+                # Check if the book is reserved by others
+                if book.reserved_by:
+                    print(
+                        f"Sorry, '{book.title}' is currently unavailable. It's reserved by {', '.join(book.reserved_by)}.")
+                else:
+                    print(f"Sorry, '{book.title}' is currently unavailable.")
         else:
             print("Book not found!")
 
@@ -51,12 +57,18 @@ class Library:
             book.status = "Available"
             del self.borrowed_books[book_id]
             print(f"Thank you, user '{user_id}', for returning the book '{book.title}'")
+            # Check if anyone reserved the book
+            if book.reserved_by:
+                next_user_id = book.reserved_by.pop(0)  # First reserved user
+                print(f"Book '{book.title}' is now available for user '{next_user_id}'.")
+
         else:
             print("You did not borrow this book or the book is not found.")
 
-    def search_book(self, title: Optional[str] = None, category: Optional[str] = None):
+    def search_book(self, title: Optional[str] = None, author: Optional[str] = None, category: Optional[str] = None):
         found_books = [book for book in self.books.values() if
                        (title and title.lower() in book.title.lower()) or
+                       (author and author.lower() in book.author.lower()) or
                        (category and category.lower() in book.category.lower())]
         if found_books:
             print("Found books:")
@@ -104,6 +116,25 @@ class Library:
         except ValueError as e:
             print(f"Error registering user: {e}")
 
+    def show_user_dashboard(self, user_id: str):
+        if user_id not in self.users:
+            print("User not found.")
+            return
+
+        user = self.users[user_id]
+        print(f"User Dashboard for {user.full_name}:")
+        print(f"Membership Status: {user.membership_status}")
+        print("Borrowed Books History:")
+        for book_id in user.borrowed_books_history:
+            book = self.books.get(book_id)
+            if book:
+                print(f" - {book.title} (Borrowed on {self.borrowed_books[book_id]['due_date'].strftime('%Y-%m-%d')})")
+        print("Reserved Books:")
+        for book_id in self.books:
+            book = self.books[book_id]
+            if user_id in book.reserved_by:
+                print(f" - {book.title} (Reserved)")
+
     def show_overdue_books(self):
         overdue_books = []
         for book_id, info in self.borrowed_books.items():
@@ -134,3 +165,7 @@ class Library:
                 print(f"Admin '{full_name}' with ID '{admin_id}' added successfully!")
             except ValueError as e:
                 print(f"Error adding admin: {e}")
+
+
+if __name__ == '__main__':
+    pass
